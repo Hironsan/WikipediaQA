@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+
+<body>
+  <div id="app">
+    <v-app>
+      <v-app-bar app color="cyan" dark>
+        <v-toolbar-title>Wikipedia QA</v-toolbar-title>
+      </v-app-bar>
+      <v-main>
+        <v-container fluid>
+          <v-overlay :value="loading">
+            <v-progress-circular indeterminate size="64" />
+          </v-overlay>
+          <v-row class="mb-6">
+            <v-col>
+              <v-card class="pa-2" outlined tile>
+                <v-toolbar flat>
+                  <v-toolbar-title class="display-1">
+                    Question
+                  </v-toolbar-title>
+                </v-toolbar>
+                <v-divider class="mx-4"></v-divider>
+                <v-card-text class="body-1">
+                  <v-form ref="form" v-model="valid" lazy-validation>
+                    <v-row no-gutters>
+                      <v-col cols="12">
+                        <v-select
+                          v-model="select"
+                          :items="examples"
+                          label="Choose an example..."
+                          outlined
+                        />
+                      </v-col>
+                      <v-col cols="12">
+                        <v-text-field
+                          v-model="question"
+                          :counter="100"
+                          :rules="questionRules"
+                          label="Question"
+                          append-icon="mdi-magnify"
+                          required
+                          outlined
+                          autofocus
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-form>
+                </v-card-text>
+                <v-card-actions class="pe-4">
+                  <v-spacer></v-spacer>
+                  <v-btn
+                    @click="submit"
+                    :disabled="loading || !valid"
+                    color="primary"
+                  >
+                    Run
+                  </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col>
+              <v-card class="pa-2" outlined tile>
+                <v-card-title class="display-1">
+                  Answers
+                </v-card-title>
+                <v-divider class="mx-4"></v-divider>
+                <v-card-text class="body-1">
+                  <v-data-table
+                    :headers="headers"
+                    :items="result"
+                    class="elevation-1"
+                  >
+                    <template v-slot:item.text="{ item }">
+                      [[ item.text.slice(0, item.start) ]]
+                      <v-chip>[[ item.text.slice(item.start, item.end) ]]</v-chip>
+                      [[ item.text.slice(item.end) ]]
+                    </template>
+                  </v-data-table>
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-container>
+      </v-main>
+    </v-app>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script>
+    axios.defaults.xsrfCookieName = 'csrftoken';
+    axios.defaults.xsrfHeaderName = 'X-CSRFToken';
+    const base_url = window.location.href;
+    new Vue({
+      el: '#app',
+      vuetify: new Vuetify(),
+      delimiters: ['[[', ']]'],
+      data: {
+        question: '',
+        loading: false,
+        select: null,
+        result: [],
+        questionRules: [
+          (v, y) => !!v || 'Question is required',
+          (v, y) =>
+            (v && v.length <= 100) || 'Question must be less than 100 characters'
+        ],
+        valid: true,
+        headers: [
+          { text: 'Score', value: 'score' },
+          { text: 'Answer', value: 'answer' },
+          { text: 'Text', value: 'text' }
+        ],
+        examples: [
+          'To whom did the Virgin Mary allegedly appear in 1858 in Lourdes France?',
+          'Who is the founder of Amazon?',
+          'Who is the winner of Battle of Sekigahara?',
+          'Where is the largest city in Japan?',
+          'What language is spoken in Japan?',
+          'Why did Tesla go to Karlovac?',
+          'How many countries in EU?'
+        ]
+      },
+      watch: {
+        select() {
+          this.question = this.select
+        }
+      },
+      methods: {
+        async analyze() {
+          this.loading = true
+          const payload = { question: this.question }
+          // const url =
+          //   'https://c606sl98f9.execute-api.us-east-1.amazonaws.com/v1/answer-english-question'
+          const url = '/answer-question'
+          const headers = {
+            'X-API-Key': 'MJb1NjRgSN6IQMVyCDg3D1HD7MCWGbsn5Af96yLd',
+            'Content-Type': 'application/json'
+          }
+          await axios
+            .post(url, payload, { headers: headers })
+            .then((response) => {
+              this.result = response.data
+            })
+          this.loading = false
+        },
+        submit() {
+          if (this.question === '') {
+            this.result = []
+            return
+          }
+          this.analyze()
+        },
+        setText(question) {
+          this.question = question
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>
