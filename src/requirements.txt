@@ -22,7 +22,7 @@ jmespath==0.10.0
 joblib==1.2.0
 MarkupSafe==1.1.1
 murmurhash==1.0.2
-numpy==1.19.0
+numpy==1.22.0
 packaging==20.4
 Pillow==8.2.0
 plac==1.1.3
